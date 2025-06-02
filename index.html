@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pengatur Keuangan Pribadi</title>
+    <title>Management Keuangan Pribadi</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web@2.1.1/dist/phosphor.js"></script>
@@ -393,8 +393,8 @@
     </main>
 
     <footer class="bg-gray-900 text-gray-300 p-6 text-center mt-auto shadow-inner">
-        <p class="text-sm">&copy; 2024 FinansiaKu. Dibuat dengan <i class="ph-heart-fill text-red-500 mx-1"></i> untuk membantu Anda mengelola keuangan.</p>
-    </footer>
+    <p class="text-sm">Dari Kita Untuk Kita 𝕭𝖄 𝕵𝖚𝖆𝖓</p>
+</footer>
 
     <script>
         // --- UTILITY FUNCTIONS ---
@@ -550,7 +550,13 @@
         };
 
         let transactions = loadData('transactions', []);
-        let categories = loadData('categories', ['Makanan', 'Transportasi', 'Hiburan', 'Gaji', 'Tagihan', 'Lain-lain', 'Investasi', 'Pendidikan', 'Kesehatan']); // Default categories with more options
+        // Ensure 'Tabungan Target' is always present in categories
+        let categories = loadData('categories', ['Makanan', 'Transportasi', 'Hiburan', 'Gaji', 'Tagihan', 'Lain-lain', 'Investasi', 'Pendidikan', 'Kesehatan']);
+        if (!categories.includes('Tabungan Target')) {
+            categories.push('Tabungan Target');
+            saveData('categories', categories); // Save updated categories immediately
+        }
+
         let budgets = loadData('budgets', []);
         let goals = loadData('goals', []);
         // New: Weekly Budget data structure { amount: number, startDate: string }
@@ -1057,7 +1063,7 @@
                             dailyInstallmentText = `<p class="text-gray-700 text-sm mt-1">Selesaikan hari ini: <span class="font-medium text-purple-600">${formatCurrency(dailyInstallmentAmount)}</span></p>`;
                         }
                     } else if (goal.dueDate && daysRemaining < 0 && goal.currentAmount < goal.targetAmount) {
-                         dailyInstallmentText = `<p class="text-gray-700 text-sm mt-1 text-red-600">Target terlewat! Masih butuh ${formatCurrency(amountNeeded)}.</p>`;
+                             dailyInstallmentText = `<p class="text-gray-700 text-sm mt-1 text-red-600">Target terlewat! Masih butuh ${formatCurrency(amountNeeded)}.</p>`;
                     } else if (amountNeeded <= 0) {
                         dailyInstallmentText = `<p class="text-gray-700 text-sm mt-1">Target tercapai!</p>`;
                     }
@@ -1355,7 +1361,7 @@
                         dailyInstallmentText = `<p class="text-gray-700 text-base mt-2">Selesaikan hari ini: <span class="font-medium text-purple-600">${formatCurrency(dailyInstallmentAmount)}</span></p>`;
                     }
                 } else if (goal.dueDate && daysRemaining < 0 && goal.currentAmount < goal.targetAmount) {
-                     dailyInstallmentText = `<p class="text-gray-700 text-base mt-2 text-red-600">Target terlewat! Masih butuh ${formatCurrency(amountNeeded)}.</p>`;
+                           dailyInstallmentText = `<p class="text-gray-700 text-base mt-2 text-red-600">Target terlewat! Masih butuh ${formatCurrency(amountNeeded)}.</p>`;
                 } else if (amountNeeded <= 0) {
                     dailyInstallmentText = `<p class="text-gray-700 text-base mt-2">Target tercapai!</p>`;
                 }
@@ -1403,8 +1409,8 @@
 
             // Add event listeners for delete and add fund buttons (existing)
             document.querySelectorAll('.add-to-goal-btn').forEach(button => {
-                button.addEventListener('click', (event) => {
-                    const goalId = event.currentTarget.closest('[data-id]').dataset.id; // Get ID from parent
+                button.addEventListener('click', async (event) => {
+                    const goalId = event.currentTarget.dataset.id; // Get ID from button's data-id
                     const amountToAdd = parseFloat(prompt('Masukkan jumlah dana yang ingin ditambahkan:'));
                     if (!isNaN(amountToAdd) && amountToAdd > 0) {
                         addToGoal(goalId, amountToAdd);
@@ -1475,7 +1481,7 @@
         };
 
         /**
-         * Adds funds to a specific financial goal.
+         * Adds funds to a specific financial goal and creates an expense transaction.
          * @param {string} id - The ID of the goal to update.
          * @param {number} amount - The amount to add.
          */
@@ -1483,14 +1489,52 @@
             const goalIndex = goals.findIndex(g => g.id === id);
             if (goalIndex !== -1) {
                 const goal = goals[goalIndex];
+
+                // Calculate current net balance (re-calculate to get the latest value)
+                let currentTotalIncome = 0;
+                let currentTotalExpense = 0;
+                const currentMonth = new Date().getMonth();
+                const currentYear = new Date().getFullYear();
+                transactions.forEach(t => {
+                    const transactionDate = new Date(t.date);
+                    if (transactionDate.getMonth() === currentMonth && transactionDate.getFullYear() === currentYear) {
+                        if (t.type === 'income') {
+                            currentTotalIncome += t.amount;
+                        } else {
+                            currentTotalExpense += t.amount;
+                        }
+                    }
+                });
+                const currentNetBalance = currentTotalIncome - currentTotalExpense;
+
+                if (amount > currentNetBalance) {
+                    showMessageBox(`Saldo bersih tidak cukup untuk menambahkan ${formatCurrency(amount)} ke target "${goal.name}". Saldo Anda saat ini: ${formatCurrency(currentNetBalance)}.`);
+                    return;
+                }
+
+                // Add to goal's current amount
                 goal.currentAmount += amount;
                 if (goal.currentAmount > goal.targetAmount) {
                     goal.currentAmount = goal.targetAmount; // Cap at target amount
                 }
+
+                // Create a new expense transaction for the goal contribution
+                const newTransaction = {
+                    id: Date.now().toString() + '_goal_contribution', // Unique ID for goal contribution transaction
+                    type: 'expense',
+                    amount: amount,
+                    description: `Kontribusi ke target: ${goal.name}`,
+                    date: new Date().toISOString().split('T')[0], // Today's date
+                    category: 'Tabungan Target'
+                };
+                transactions.push(newTransaction);
+
                 saveData('goals', goals);
+                saveData('transactions', transactions); // Save updated transactions
                 renderGoals();
-                updateDashboard(); // Update dashboard after goal changes
-                showMessageBox(`Dana sebesar ${formatCurrency(amount)} berhasil ditambahkan ke target "${goal.name}".`);
+                renderTransactions(); // Re-render transactions to show the new expense
+                updateDashboard(); // Update dashboard after goal and transaction changes
+                showMessageBox(`Dana sebesar ${formatCurrency(amount)} berhasil ditambahkan ke target "${goal.name}" dan dicatat sebagai pengeluaran.`);
             } else {
                 showMessageBox('Target tidak ditemukan.');
             }
@@ -1526,6 +1570,7 @@
                 amountToApply = parsedInput;
             }
 
+            // Call addToGoal which now handles the net balance check and transaction creation
             addToGoal(goalId, amountToApply);
         };
 
