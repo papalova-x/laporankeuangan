@@ -1,0 +1,1767 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pengatur Keuangan Pribadi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web@2.1.1/dist/phosphor.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5; /* Lighter gray background */
+        }
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.5s ease-out;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .tab-button.active {
+            background-color: #059669; /* Emerald 600 */
+            color: white;
+            box-shadow: 0 4px 10px rgba(5, 150, 105, 0.3);
+        }
+        .tab-button {
+            transition: all 0.3s ease;
+        }
+        /* Custom scrollbar for better aesthetics */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #e0e0e0;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #a0a0a0;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #707070;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .card {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        }
+
+        /* Responsive Design Notes: */
+        /* The layout is inherently responsive due to extensive use of Tailwind CSS utility classes. */
+        /* Classes like 'grid-cols-1 md:grid-cols-3' automatically adjust column counts based on screen size. */
+        /* 'flex flex-col md:flex-row' makes elements stack vertically on small screens and horizontally on medium/large. */
+        /* 'w-full' ensures elements take full width on smaller screens, adapting to available space. */
+        /* The 'viewport' meta tag in the head ensures proper scaling on mobile devices. */
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+    <header class="bg-emerald-700 text-white p-4 shadow-xl">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-3xl font-bold flex items-center">
+                <i class="ph-chart-line-up-fill mr-3 text-4xl"></i>FinansiaKu
+            </h1>
+            <div class="flex items-center space-x-2">
+                <i class="ph-wallet-fill text-3xl"></i>
+            </div>
+        </div>
+    </header>
+
+    <nav class="bg-white shadow-md p-2 sticky top-0 z-10">
+        <div class="container mx-auto flex justify-around flex-wrap">
+            <button class="tab-button flex-1 py-3 px-4 rounded-xl text-gray-700 hover:bg-emerald-50 transition-colors duration-200 active flex items-center justify-center m-1" data-tab="dashboard">
+                <i class="ph-house-fill mr-2 text-xl"></i>Dasbor
+            </button>
+            <button class="tab-button flex-1 py-3 px-4 rounded-xl text-gray-700 hover:bg-emerald-50 transition-colors duration-200 flex items-center justify-center m-1" data-tab="transactions">
+                <i class="ph-receipt-fill mr-2 text-xl"></i>Transaksi
+            </button>
+            <button class="tab-button flex-1 py-3 px-4 rounded-xl text-gray-700 hover:bg-emerald-50 transition-colors duration-200 flex items-center justify-center m-1" data-tab="budgets">
+                <i class="ph-chart-pie-slice-fill mr-2 text-xl"></i>Anggaran
+            </button>
+            <button class="tab-button flex-1 py-3 px-4 rounded-xl text-gray-700 hover:bg-emerald-50 transition-colors duration-200 flex items-center justify-center m-1" data-tab="goals">
+                <i class="ph-target-fill mr-2 text-xl"></i>Target
+            </button>
+            <button class="tab-button flex-1 py-3 px-4 rounded-xl text-gray-700 hover:bg-emerald-50 transition-colors duration-200 flex items-center justify-center m-1" data-tab="categories">
+                <i class="ph-tag-fill mr-2 text-xl"></i>Kategori
+            </button>
+            <button class="tab-button flex-1 py-3 px-4 rounded-xl text-gray-700 hover:bg-emerald-50 transition-colors duration-200 flex items-center justify-center m-1" data-tab="rewards">
+                <i class="ph-medal-fill mr-2 text-xl"></i>Prestasi
+            </button>
+        </div>
+    </nav>
+
+    <main class="container mx-auto p-4 flex-grow">
+        <section id="dashboard" class="tab-content active bg-white p-6 rounded-xl shadow-lg mb-6">
+            <h2 class="text-3xl font-bold text-gray-800 mb-6 flex items-center">
+                <i class="ph-gauge-fill mr-3 text-emerald-600"></i>Ringkasan Keuangan Anda
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="card bg-gradient-to-br from-emerald-500 to-emerald-600 text-white p-6 rounded-xl shadow-lg flex flex-col items-center justify-center text-center">
+                    <i class="ph-currency-dollar-simple-fill text-5xl mb-2 opacity-80"></i>
+                    <p class="text-lg font-light opacity-90">Total Pemasukan (Bulan Ini)</p>
+                    <p id="totalIncome" class="text-4xl font-extrabold mt-2">Rp 0</p>
+                </div>
+                <div class="card bg-gradient-to-br from-red-500 to-red-600 text-white p-6 rounded-xl shadow-lg flex flex-col items-center justify-center text-center">
+                    <i class="ph-shopping-cart-simple-fill text-5xl mb-2 opacity-80"></i>
+                    <p class="text-lg font-light opacity-90">Total Pengeluaran (Bulan Ini)</p>
+                    <p id="totalExpense" class="text-4xl font-extrabold mt-2">Rp 0</p>
+                </div>
+                <div class="card bg-gradient-to-br from-blue-500 to-blue-600 text-white p-6 rounded-xl shadow-lg flex flex-col items-center justify-center text-center">
+                    <i class="ph-wallet-fill text-5xl mb-2 opacity-80"></i>
+                    <p class="text-lg font-light opacity-90">Saldo Bersih (Bulan Ini)</p>
+                    <p id="netBalance" class="text-4xl font-extrabold mt-2">Rp 0</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div class="bg-gray-50 p-6 rounded-xl shadow-md border border-gray-200">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                        <i class="ph-chart-bar-fill mr-2 text-gray-600"></i>Statistik Bulan Ini
+                    </h3>
+                    <div class="space-y-3 text-gray-700">
+                        <p class="flex justify-between items-center">
+                            <span>Pengeluaran dari Pemasukan:</span>
+                            <span id="expenseToIncomeRatio" class="font-bold text-lg">0%</span>
+                        </p>
+                        <p class="flex justify-between items-center">
+                            <span>Pemasukan vs Pengeluaran:</span>
+                            <span id="incomeVsExpenseStatus" class="font-bold text-lg text-gray-500"></span>
+                        </p>
+                    </div>
+                </div>
+
+                <div class="bg-gray-50 p-6 rounded-xl shadow-md border border-gray-200">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                        <i class="ph-lightbulb-fill mr-2 text-yellow-600"></i>Saran & Motivasi
+                    </h3>
+                    <p id="spendingSuggestion" class="text-gray-700 text-base leading-relaxed">
+                        Analisis keuangan Anda sedang dimuat...
+                    </p>
+                </div>
+            </div>
+
+            <div class="bg-gray-50 p-6 rounded-xl shadow-md border border-gray-200 mb-8">
+                <h3 class="text-2xl font-semibold text-gray-800 mb-4 flex items-center">
+                    <i class="ph-calendar-check-fill mr-2 text-teal-600"></i>Kebutuhan Mingguan
+                </h3>
+                <form id="weeklyBudgetForm" class="flex flex-col md:flex-row gap-4 mb-4 items-end">
+                    <div class="flex-grow">
+                        <label for="weeklyBudgetAmount" class="block text-sm font-medium text-gray-700 mb-1">Anggaran Mingguan (Rp)</label>
+                        <input type="number" id="weeklyBudgetAmount" class="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-base" placeholder="Contoh: 300.000" required>
+                    </div>
+                    <button type="submit" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition-colors duration-200">
+                        <i class="ph-check-circle-fill mr-2"></i>Atur Mingguan
+                    </button>
+                </form>
+                <div id="weeklyBudgetSummary" class="space-y-2 text-gray-700">
+                    <p>Anggaran Minggu Ini: <span id="currentWeeklyBudget" class="font-semibold">Rp 0</span></p>
+                    <p>Terpakai Minggu Ini: <span id="spentWeeklyAmount" class="font-semibold text-red-600">Rp 0</span></p>
+                    <p>Sisa Minggu Ini: <span id="remainingWeeklyAmount" class="font-semibold text-emerald-600">Rp 0</span></p>
+                    <div class="w-full bg-gray-300 rounded-full h-2.5">
+                        <div id="weeklyBudgetProgressBar" class="h-2.5 rounded-full" style="width: 0%;"></div>
+                    </div>
+                    <p id="weeklyBudgetPercentage" class="text-right text-xs text-gray-600 mt-1">0% terpakai</p>
+                    <p id="weeklyBudgetWarning" class="text-sm text-red-500 font-medium hidden"></p>
+                </div>
+            </div>
+
+            <h3 class="text-2xl font-semibold text-gray-800 mt-8 mb-4 flex items-center">
+                <i class="ph-chart-line-fill mr-2 text-green-600"></i>Tren Keuangan Bulanan
+            </h3>
+            <div class="bg-gray-50 p-6 rounded-xl shadow-md border border-gray-200">
+                <canvas id="monthlyFinanceChart"></canvas>
+            </div>
+
+            <h3 class="text-2xl font-semibold text-gray-800 mt-8 mb-4 flex items-center">
+                <i class="ph-target-fill mr-2 text-blue-600"></i>Progres Target Keuangan Anda
+            </h3>
+            <div id="dashboardGoalsList" class="space-y-4">
+                <p class="text-gray-500 text-center py-4">Belum ada target keuangan yang diatur.</p>
+            </div>
+
+            <h3 class="text-2xl font-semibold text-gray-800 mt-8 mb-4 flex items-center">
+                <i class="ph-chart-pie-slice-fill mr-2 text-purple-600"></i>Ringkasan Anggaran Bulan Ini
+            </h3>
+            <div id="dashboardBudgetsList" class="space-y-4">
+                <p class="text-gray-500 text-center py-4">Belum ada anggaran yang diatur.</p>
+            </div>
+
+            <div id="topExpensesSection" class="hidden">
+                <h3 class="text-2xl font-semibold text-gray-800 mt-8 mb-4 flex items-center">
+                    <i class="ph-list-dashes-fill mr-2 text-gray-600"></i>Pengeluaran Teratas (Bulan Ini)
+                </h3>
+                <div id="topExpensesList" class="space-y-3">
+                    </div>
+            </div>
+        </section>
+
+        <section id="transactions" class="tab-content bg-white p-6 rounded-xl shadow-lg mb-6">
+            <h2 class="text-3xl font-bold text-gray-800 mb-6 flex items-center">
+                <i class="ph-receipt-fill mr-3 text-emerald-600"></i>Catat Transaksi Baru
+            </h2>
+            <form id="transactionForm" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="transactionType" class="block text-sm font-medium text-gray-700 mb-2">Jenis Transaksi</label>
+                    <select id="transactionType" class="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-base">
+                        <option value="expense">Pengeluaran</option>
+                        <option value="income">Pemasukan</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="transactionAmount" class="block text-sm font-medium text-gray-700 mb-2">Jumlah (Rp)</label>
+                    <input type="number" id="transactionAmount" class="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-base" placeholder="Contoh: 50.000" required>
+                </div>
+                <div>
+                    <label for="transactionDescription" class="block text-sm font-medium text-gray-700 mb-2">Deskripsi</label>
+                    <input type="text" id="transactionDescription" class="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-base" placeholder="Contoh: Beli Kopi" required>
+                </div>
+                <div>
+                    <label for="transactionDate" class="block text-sm font-medium text-gray-700 mb-2">Tanggal</label>
+                    <input type="date" id="transactionDate" class="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-base" required>
+                </div>
+                <div>
+                    <label for="transactionCategory" class="block text-sm font-medium text-gray-700 mb-2">Kategori</label>
+                    <select id="transactionCategory" class="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-base" required>
+                        </select>
+                </div>
+                <div class="md:col-span-2 flex justify-end mt-4">
+                    <button type="submit" class="inline-flex items-center px-8 py-3 border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors duration-200">
+                        <i class="ph-plus-circle-fill mr-2 text-xl"></i>Tambah Transaksi
+                    </button>
+                </div>
+            </form>
+
+            <h3 class="text-2xl font-semibold text-gray-800 mt-10 mb-5 flex items-center">
+                <i class="ph-clock-counter-clockwise-fill mr-2 text-gray-600"></i>Riwayat Transaksi
+            </h3>
+            <div class="overflow-x-auto bg-white rounded-lg shadow-md">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Tanggal</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Deskripsi</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Kategori</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Jenis</th>
+                            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-600 uppercase tracking-wider">Jumlah</th>
+                            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-600 uppercase tracking-wider">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transactionList" class="bg-white divide-y divide-gray-200">
+                        <tr>
+                            <td colspan="6" class="px-6 py-4 whitespace-nowrap text-center text-gray-500">Belum ada transaksi.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="budgets" class="tab-content bg-white p-6 rounded-xl shadow-lg mb-6">
+            <h2 class="text-3xl font-bold text-gray-800 mb-6 flex items-center">
+                <i class="ph-chart-pie-slice-fill mr-3 text-emerald-600"></i>Kelola Anggaran
+            </h2>
+            <form id="budgetForm" class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div>
+                    <label for="budgetCategory" class="block text-sm font-medium text-gray-700 mb-2">Kategori</label>
+                    <select id="budgetCategory" class="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-base" required>
+                        </select>
+                </div>
+                <div>
+                    <label for="budgetAmount" class="block text-sm font-medium text-gray-700 mb-2">Jumlah Anggaran (Rp)</label>
+                    <input type="number" id="budgetAmount" class="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-base" placeholder="Contoh: 1.000.000" required>
+                </div>
+                <div class="md:col-span-2 flex justify-end mt-4">
+                    <button type="submit" class="inline-flex items-center px-8 py-3 border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors duration-200">
+                        <i class="ph-plus-circle-fill mr-2 text-xl"></i>Atur Anggaran
+                    </button>
+                </div>
+            </form>
+
+            <h3 class="text-2xl font-semibold text-gray-800 mt-10 mb-5 flex items-center">
+                <i class="ph-currency-circle-dollar-fill mr-2 text-gray-600"></i>Anggaran Anda
+            </h3>
+            <div id="budgetsList" class="space-y-5">
+                <p class="text-gray-500 text-center py-4">Belum ada anggaran yang diatur.</p>
+            </div>
+        </section>
+
+        <section id="goals" class="tab-content bg-white p-6 rounded-xl shadow-lg mb-6">
+            <h2 class="text-3xl font-bold text-gray-800 mb-6 flex items-center">
+                <i class="ph-target-fill mr-3 text-emerald-600"></i>Kelola Target Keuangan
+            </h2>
+            <form id="goalForm" class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div>
+                    <label for="goalName" class="block text-sm font-medium text-gray-700 mb-2">Nama Target</label>
+                    <input type="text" id="goalName" class="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-base" placeholder="Contoh: Tabungan Liburan" required>
+                </div>
+                <div>
+                    <label for="goalTargetAmount" class="block text-sm font-medium text-gray-700 mb-2">Jumlah Target (Rp)</label>
+                    <input type="number" id="goalTargetAmount" class="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-base" placeholder="Contoh: 10.000.000" required>
+                </div>
+                <div>
+                    <label for="goalCurrentAmount" class="block text-sm font-medium text-gray-700 mb-2">Jumlah Saat Ini (Rp)</label>
+                    <input type="number" id="goalCurrentAmount" class="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-base" value="0" required>
+                </div>
+                <div>
+                    <label for="goalDueDate" class="block text-sm font-medium text-gray-700 mb-2">Tanggal Jatuh Tempo (Opsional)</label>
+                    <input type="date" id="goalDueDate" class="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-base">
+                </div>
+                <div class="md:col-span-2 flex justify-end mt-4">
+                    <button type="submit" class="inline-flex items-center px-8 py-3 border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors duration-200">
+                        <i class="ph-plus-circle-fill mr-2 text-xl"></i>Tambah Target
+                    </button>
+                </div>
+            </form>
+
+            <h3 class="text-2xl font-semibold text-gray-800 mt-10 mb-5 flex items-center">
+                <i class="ph-flag-checkered-fill mr-2 text-gray-600"></i>Target Keuangan Anda
+            </h3>
+            <div id="goalsList" class="space-y-5">
+                <p class="text-gray-500 text-center py-4">Belum ada target keuangan yang diatur.</p>
+            </div>
+        </section>
+
+        <section id="categories" class="tab-content bg-white p-6 rounded-xl shadow-lg mb-6">
+            <h2 class="text-3xl font-bold text-gray-800 mb-6 flex items-center">
+                <i class="ph-tag-fill mr-3 text-emerald-600"></i>Kelola Kategori
+            </h2>
+            <form id="categoryForm" class="flex flex-col md:flex-row gap-6 mb-8">
+                <div class="flex-grow">
+                    <label for="categoryName" class="block text-sm font-medium text-gray-700 mb-2">Nama Kategori Baru</label>
+                    <input type="text" id="categoryName" class="mt-1 block w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-base" placeholder="Contoh: Transportasi" required>
+                </div>
+                <div class="flex items-end mt-4 md:mt-0">
+                    <button type="submit" class="inline-flex items-center px-8 py-3 border border-transparent text-base font-medium rounded-lg shadow-sm text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors duration-200">
+                        <i class="ph-plus-circle-fill mr-2 text-xl"></i>Tambah Kategori
+                    </button>
+                </div>
+            </form>
+
+            <h3 class="text-2xl font-semibold text-gray-800 mt-10 mb-5 flex items-center">
+                <i class="ph-list-fill mr-2 text-gray-600"></i>Daftar Kategori
+            </h3>
+            <div id="categoriesList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                <p class="text-gray-500 text-center py-4 col-span-full">Belum ada kategori.</p>
+            </div>
+        </section>
+
+        <section id="rewards" class="tab-content bg-white p-6 rounded-xl shadow-lg mb-6">
+            <h2 class="text-3xl font-bold text-gray-800 mb-6 flex items-center">
+                <i class="ph-medal-fill mr-3 text-yellow-600"></i>Prestasi Anda
+            </h2>
+            <p class="text-gray-700 mb-6">Ini adalah daftar semua *reward* yang telah Anda raih. Terus tingkatkan manajemen keuangan Anda untuk mendapatkan lebih banyak prestasi!</p>
+            <div id="achievedRewardsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <p class="text-gray-500 text-center py-4 col-span-full">Belum ada prestasi yang diraih.</p>
+            </div>
+        </section>
+
+
+        <div id="messageBox" class="fixed inset-0 bg-gray-900 bg-opacity-70 flex items-center justify-center hidden z-50 p-4">
+            <div class="bg-white p-8 rounded-xl shadow-2xl max-w-sm w-full text-center transform scale-95 transition-transform duration-200 ease-out">
+                <p id="messageBoxContent" class="text-lg font-medium text-gray-800 mb-6"></p>
+                <button id="messageBoxClose" class="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-colors duration-200">Oke</button>
+            </div>
+        </div>
+
+        <div id="confirmDialog" class="fixed inset-0 bg-gray-900 bg-opacity-70 flex items-center justify-center hidden z-50 p-4">
+            <div class="bg-white p-8 rounded-xl shadow-2xl max-w-sm w-full text-center transform scale-95 transition-transform duration-200 ease-out">
+                <p id="confirmDialogContent" class="text-lg font-medium text-gray-800 mb-6"></p>
+                <div class="flex justify-center space-x-4">
+                    <button id="confirmDialogYes" class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200">Ya</button>
+                    <button id="confirmDialogNo" class="px-6 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300 transition-colors duration-200">Tidak</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="rewardNotificationModal" class="fixed inset-0 bg-gradient-to-br from-purple-800 to-indigo-900 bg-opacity-90 flex items-center justify-center hidden z-50 p-4">
+            <div class="bg-white p-8 rounded-xl shadow-2xl max-w-md w-full text-center transform scale-95 transition-transform duration-300 ease-out border-4 border-yellow-400 relative overflow-hidden">
+                <div class="absolute inset-0 bg-yellow-100 opacity-20 animate-pulse"></div>
+                <i class="ph-confetti-fill text-yellow-500 text-6xl mb-4 animate-bounce"></i>
+                <h3 id="rewardTitle" class="text-3xl font-extrabold text-purple-800 mb-3">Selamat!</h3>
+                <p id="rewardDescription" class="text-lg text-gray-700 mb-6"></p>
+                <button id="rewardModalClose" class="px-8 py-3 bg-purple-600 text-white font-bold rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors duration-200 transform hover:scale-105">Lanjutkan Petualangan Finansial!</button>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="bg-gray-900 text-gray-300 p-6 text-center mt-auto shadow-inner">
+        <p class="text-sm">&copy; 2024 FinansiaKu. Dibuat dengan <i class="ph-heart-fill text-red-500 mx-1"></i> untuk membantu Anda mengelola keuangan.</p>
+    </footer>
+
+    <script>
+        // --- UTILITY FUNCTIONS ---
+
+        /**
+         * Formats a number as Indonesian Rupiah currency.
+         * @param {number} amount - The amount to format.
+         * @returns {string} The formatted currency string.
+         */
+        const formatCurrency = (amount) => {
+            return new Intl.NumberFormat('id-ID', {
+                style: 'currency',
+                currency: 'IDR',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).format(amount);
+        };
+
+        /**
+         * Formats a date string to a more readable format (e.g., DD/MM/YYYY).
+         * @param {string} dateString - The date string (YYYY-MM-DD).
+         * @returns {string} The formatted date string.
+         */
+        const formatDate = (dateString) => {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('id-ID', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
+        };
+
+        /**
+         * Gets the start of the week (Monday) for a given date.
+         * @param {Date} date - The date object.
+         * @returns {Date} A new Date object representing the Monday of that week.
+         */
+        const getStartOfWeek = (date) => {
+            const d = new Date(date);
+            const day = d.getDay(); // 0 for Sunday, 1 for Monday, ..., 6 for Saturday
+            const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Adjust to Monday
+            d.setDate(diff);
+            d.setHours(0, 0, 0, 0); // Set to start of the day
+            return d;
+        };
+
+        /**
+         * Calculates the number of days remaining until a target date.
+         * @param {string} targetDateString - The target date string (YYYY-MM-DD).
+         * @returns {number} The number of days remaining, or -1 if targetDate is in the past.
+         */
+        const getDaysRemaining = (targetDateString) => {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // Normalize today to start of day
+            const targetDate = new Date(targetDateString);
+            targetDate.setHours(0, 0, 0, 0); // Normalize target date to start of day
+
+            const diffTime = targetDate.getTime() - today.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            return diffDays > 0 ? diffDays : (diffDays === 0 ? 0 : -1); // Return 0 if today is target, -1 if past
+        };
+
+
+        /**
+         * Shows a custom message box (modal).
+         * @param {string} message - The message to display.
+         */
+        const showMessageBox = (message) => {
+            const messageBox = document.getElementById('messageBox');
+            const messageBoxContent = document.getElementById('messageBoxContent');
+            messageBoxContent.textContent = message;
+            messageBox.classList.remove('hidden');
+            messageBox.querySelector('div').classList.add('scale-100'); // Animate in
+        };
+
+        /**
+         * Hides the custom message box.
+         */
+        const hideMessageBox = () => {
+            const messageBox = document.getElementById('messageBox');
+            messageBox.querySelector('div').classList.remove('scale-100'); // Animate out
+            messageBox.classList.add('hidden');
+        };
+
+        /**
+         * Shows a custom confirmation dialog.
+         * @param {string} message - The message to display.
+         * @returns {Promise<boolean>} A promise that resolves to true if 'Yes' is clicked, false otherwise.
+         */
+        const showConfirmDialog = (message) => {
+            return new Promise((resolve) => {
+                const confirmDialog = document.getElementById('confirmDialog');
+                const confirmDialogContent = document.getElementById('confirmDialogContent');
+                const confirmDialogYes = document.getElementById('confirmDialogYes');
+                const confirmDialogNo = document.getElementById('confirmDialogNo');
+
+                confirmDialogContent.textContent = message;
+                confirmDialog.classList.remove('hidden');
+                confirmDialog.querySelector('div').classList.add('scale-100'); // Animate in
+
+                const handleYes = () => {
+                    confirmDialog.querySelector('div').classList.remove('scale-100'); // Animate out
+                    confirmDialog.classList.add('hidden');
+                    confirmDialogYes.removeEventListener('click', handleYes);
+                    confirmDialogNo.removeEventListener('click', handleNo);
+                    resolve(true);
+                };
+
+                const handleNo = () => {
+                    confirmDialog.querySelector('div').classList.remove('scale-100'); // Animate out
+                    confirmDialog.classList.add('hidden');
+                    confirmDialogYes.removeEventListener('click', handleYes);
+                    confirmDialogNo.removeEventListener('click', handleNo);
+                    resolve(false);
+                };
+
+                confirmDialogYes.addEventListener('click', handleYes);
+                confirmDialogNo.addEventListener('click', handleNo);
+            });
+        };
+
+
+        // --- LOCAL STORAGE MANAGEMENT ---
+
+        /**
+         * Loads data from localStorage.
+         * @param {string} key - The key for the data.
+         * @param {Array|Object} defaultValue - Default value if data is not found.
+         * @returns {Array|Object} The parsed data or default value.
+         */
+        const loadData = (key, defaultValue) => {
+            try {
+                const data = localStorage.getItem(key);
+                return data ? JSON.parse(data) : defaultValue;
+            } catch (e) {
+                console.error(`Error loading data from localStorage for key "${key}":`, e);
+                return defaultValue;
+            }
+        };
+
+        /**
+         * Saves data to localStorage.
+         * @param {string} key - The key for the data.
+         * @param {Array|Object} data - The data to save.
+         */
+        const saveData = (key, data) => {
+            try {
+                localStorage.setItem(key, JSON.stringify(data));
+            } catch (e) {
+                console.error(`Error saving data to localStorage for key "${key}":`, e);
+                showMessageBox('Gagal menyimpan data. Mungkin memori browser penuh.');
+            }
+        };
+
+        let transactions = loadData('transactions', []);
+        let categories = loadData('categories', ['Makanan', 'Transportasi', 'Hiburan', 'Gaji', 'Tagihan', 'Lain-lain', 'Investasi', 'Pendidikan', 'Kesehatan']); // Default categories with more options
+        let budgets = loadData('budgets', []);
+        let goals = loadData('goals', []);
+        // New: Weekly Budget data structure { amount: number, startDate: string }
+        let weeklyBudget = loadData('weeklyBudget', { amount: 0, startDate: '' });
+        let achievedRewards = loadData('achievedRewards', []); // New: Store achieved rewards
+
+
+        // --- GLOBAL ELEMENTS ---
+        const transactionForm = document.getElementById('transactionForm');
+        const transactionListTableBody = document.getElementById('transactionList');
+        const transactionCategorySelect = document.getElementById('transactionCategory');
+        const budgetCategorySelect = document.getElementById('budgetCategory');
+        const budgetForm = document.getElementById('budgetForm');
+        const budgetsListDiv = document.getElementById('budgetsList');
+        const goalForm = document.getElementById('goalForm');
+        const goalsListDiv = document.getElementById('goalsList');
+        const categoryForm = document.getElementById('categoryForm');
+        const categoriesListDiv = document.getElementById('categoriesList');
+        const totalIncomeEl = document.getElementById('totalIncome');
+        const totalExpenseEl = document.getElementById('totalExpense');
+        const netBalanceEl = document.getElementById('netBalance');
+        const topExpensesListEl = document.getElementById('topExpensesList');
+        const expenseToIncomeRatioEl = document.getElementById('expenseToIncomeRatio');
+        const incomeVsExpenseStatusEl = document.getElementById('incomeVsExpenseStatus');
+        const spendingSuggestionEl = document.getElementById('spendingSuggestion');
+
+        // Dashboard elements for Goals and Budgets
+        const dashboardGoalsListEl = document.getElementById('dashboardGoalsList');
+        const dashboardBudgetsListEl = document.getElementById('dashboardBudgetsList');
+
+        // New Weekly Budget elements
+        const weeklyBudgetForm = document.getElementById('weeklyBudgetForm');
+        const weeklyBudgetAmountInput = document.getElementById('weeklyBudgetAmount');
+        const currentWeeklyBudgetEl = document.getElementById('currentWeeklyBudget');
+        const spentWeeklyAmountEl = document.getElementById('spentWeeklyAmount');
+        const remainingWeeklyAmountEl = document.getElementById('remainingWeeklyAmount');
+        const weeklyBudgetProgressBar = document.getElementById('weeklyBudgetProgressBar');
+        const weeklyBudgetPercentageEl = document.getElementById('weeklyBudgetPercentage');
+        const weeklyBudgetWarningEl = document.getElementById('weeklyBudgetWarning');
+
+        // Chart element
+        const monthlyFinanceChartCanvas = document.getElementById('monthlyFinanceChart');
+        let monthlyChart; // To store the Chart.js instance
+
+        // Top Expenses Section Container
+        const topExpensesSectionEl = document.getElementById('topExpensesSection');
+
+        // New Reward Elements
+        const rewardNotificationModal = document.getElementById('rewardNotificationModal');
+        const rewardTitleEl = document.getElementById('rewardTitle');
+        const rewardDescriptionEl = document.getElementById('rewardDescription');
+        const rewardModalCloseBtn = document.getElementById('rewardModalClose');
+        const achievedRewardsListEl = document.getElementById('achievedRewardsList');
+
+
+        // --- REWARD DEFINITIONS ---
+        const rewardDefinitions = [
+            {
+                id: 'net_balance_1m',
+                type: 'balance',
+                condition: (netBalance) => netBalance >= 1000000,
+                title: 'Jagoan Saldo Positif!',
+                description: 'Selamat! Saldo bersih Anda telah mencapai Rp 1.000.000! Ini bukti Anda bukan kaleng-kaleng. Terus tingkatkan!',
+                suggestion: 'Rayakan dengan secangkir kopi favorit Anda (jangan lebih dari Rp 50.000 ya!).'
+            },
+            {
+                id: 'net_balance_5m',
+                type: 'balance',
+                condition: (netBalance) => netBalance >= 5000000,
+                title: 'Master Saldo Jutaan!',
+                description: 'Gila! Saldo bersih Anda sudah tembus Rp 5.000.000! Anda adalah master keuangan sejati. Siapa bilang hemat itu menyiksa?',
+                suggestion: 'Beli buku tentang investasi atau tonton film yang sudah lama Anda incar. Tapi ingat, jangan boros!'
+            },
+            {
+                id: 'net_balance_10m',
+                type: 'balance',
+                condition: (netBalance) => netBalance >= 10000000,
+                title: 'Sultan Saldo Miliaran (soon)!',
+                description: 'WOW! Saldo bersih Anda mencapai Rp 10.000.000! Anda sudah di level selanjutnya. Jangan pernah berhenti di sini!',
+                suggestion: 'Pertimbangkan untuk mengalokasikan sebagian dana ke investasi jangka panjang. Atau, traktir diri sendiri makan enak, tapi tetap ingat tujuan besarmu!'
+            },
+            {
+                id: 'first_goal_completed',
+                type: 'goal_completion',
+                condition: (goal) => goal.targetAmount > 0 && goal.currentAmount >= goal.targetAmount,
+                title: 'Penakluk Target Pertama!',
+                description: (goalName) => `Selamat! Target "${goalName}" berhasil Anda taklukkan! Ini baru permulaan, jangan cepat puas!`,
+                suggestion: 'Rasakan kebanggaan ini, lalu segera tetapkan target yang lebih menantang!'
+            },
+            {
+                id: 'multiple_goals_completed',
+                type: 'multiple_goal_completion',
+                condition: (completedGoalsCount) => completedGoalsCount >= 3, // Condition for 3 or more goals completed
+                title: 'Kolektor Prestasi!',
+                description: 'Luar biasa! Anda telah menyelesaikan 3 target atau lebih! Anda adalah mesin pencapai tujuan! Dunia finansial ada di genggaman Anda!',
+                suggestion: 'Tuliskan pelajaran dari setiap target yang tercapai dan bagikan tips Anda. Inspirasi orang lain!'
+            }
+        ];
+
+
+        // --- INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set default date to today
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('transactionDate').value = today;
+
+            // Initialize weekly budget input if set
+            if (weeklyBudget.amount > 0) {
+                weeklyBudgetAmountInput.value = weeklyBudget.amount;
+            }
+
+            renderCategoriesDropdowns();
+            renderTransactions();
+            renderBudgets();
+            renderGoals();
+            updateDashboard(); // This will also call updateWeeklyBudget and renderChart
+            renderAchievedRewards(); // Render rewards on load
+
+            // Event listener for message box close button
+            document.getElementById('messageBoxClose').addEventListener('click', hideMessageBox);
+            // Event listener for reward modal close button
+            rewardModalCloseBtn.addEventListener('click', hideRewardNotificationModal);
+        });
+
+        // --- TAB NAVIGATION ---
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', () => {
+                // Remove active class from all buttons and content
+                document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+                // Add active class to clicked button and corresponding content
+                button.classList.add('active');
+                document.getElementById(button.dataset.tab).classList.add('active');
+
+                // Re-render content when tab changes to ensure fresh data
+                if (button.dataset.tab === 'dashboard') updateDashboard();
+                if (button.dataset.tab === 'transactions') renderTransactions();
+                if (button.dataset.tab === 'budgets') renderBudgets();
+                if (button.dataset.tab === 'goals') renderGoals();
+                if (button.dataset.tab === 'categories') renderCategories();
+                if (button.dataset.tab === 'rewards') renderAchievedRewards(); // Update rewards tab
+            });
+        });
+
+        // --- CATEGORIES MANAGEMENT ---
+
+        /**
+         * Renders categories in the dropdowns (transaction and budget forms).
+         */
+        const renderCategoriesDropdowns = () => {
+            transactionCategorySelect.innerHTML = ''; // Clear existing options
+            budgetCategorySelect.innerHTML = ''; // Clear existing options
+
+            if (categories.length === 0) {
+                const defaultOption = document.createElement('option');
+                defaultOption.value = '';
+                defaultOption.textContent = 'Tidak ada kategori';
+                defaultOption.disabled = true;
+                defaultOption.selected = true;
+                transactionCategorySelect.appendChild(defaultOption);
+                budgetCategorySelect.appendChild(defaultOption.cloneNode(true));
+                return;
+            }
+
+            categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category;
+                option.textContent = category;
+                transactionCategorySelect.appendChild(option);
+
+                const budgetOption = document.createElement('option');
+                budgetOption.value = category;
+                budgetOption.textContent = category;
+                budgetCategorySelect.appendChild(budgetOption);
+            });
+        };
+
+        /**
+         * Renders the list of categories in the Categories tab.
+         */
+        const renderCategories = () => {
+            categoriesListDiv.innerHTML = ''; // Clear existing list
+
+            if (categories.length === 0) {
+                categoriesListDiv.innerHTML = '<p class="text-gray-500 text-center py-4 col-span-full">Belum ada kategori.</p>';
+                return;
+            }
+
+            categories.forEach(category => {
+                const categoryItem = document.createElement('div');
+                categoryItem.className = 'flex items-center justify-between bg-gray-100 p-4 rounded-lg shadow-sm border border-gray-200 hover:bg-gray-200 transition-colors duration-200';
+                categoryItem.innerHTML = `
+                    <span class="text-gray-800 font-medium text-base">${category}</span>
+                    <button class="delete-category-btn text-red-500 hover:text-red-700 transition-colors duration-200 p-1 rounded-md" data-category="${category}">
+                        <i class="ph-trash-fill text-xl"></i>
+                    </button>
+                `;
+                categoriesListDiv.appendChild(categoryItem);
+            });
+
+            // Add event listeners for delete buttons
+            document.querySelectorAll('.delete-category-btn').forEach(button => {
+                button.addEventListener('click', async (event) => {
+                    const categoryToDelete = event.currentTarget.dataset.category;
+                    const confirmed = await showConfirmDialog(`Apakah Anda yakin ingin menghapus kategori "${categoryToDelete}"? Transaksi yang terkait akan tetap ada.`);
+                    if (confirmed) {
+                        deleteCategory(categoryToDelete);
+                    }
+                });
+            });
+        };
+
+        /**
+         * Handles adding a new category.
+         */
+        categoryForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const categoryNameInput = document.getElementById('categoryName');
+            const newCategory = categoryNameInput.value.trim();
+
+            if (newCategory && !categories.includes(newCategory)) {
+                categories.push(newCategory);
+                saveData('categories', categories);
+                renderCategoriesDropdowns();
+                renderCategories();
+                categoryNameInput.value = '';
+                showMessageBox('Kategori berhasil ditambahkan!');
+            } else if (categories.includes(newCategory)) {
+                showMessageBox('Kategori ini sudah ada.');
+            } else {
+                showMessageBox('Nama kategori tidak boleh kosong.');
+            }
+        });
+
+        /**
+         * Deletes a category.
+         * @param {string} categoryToDelete - The category name to delete.
+         */
+        const deleteCategory = (categoryToDelete) => {
+            categories = categories.filter(cat => cat !== categoryToDelete);
+            saveData('categories', categories);
+            renderCategoriesDropdowns();
+            renderCategories();
+            showMessageBox(`Kategori "${categoryToDelete}" berhasil dihapus.`);
+        };
+
+
+        // --- TRANSACTIONS MANAGEMENT ---
+
+        /**
+         * Renders all transactions in the table.
+         */
+        const renderTransactions = () => {
+            transactionListTableBody.innerHTML = ''; // Clear existing rows
+
+            if (transactions.length === 0) {
+                transactionListTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="px-6 py-4 whitespace-nowrap text-center text-gray-500">Belum ada transaksi.</td>
+                    </tr>
+                `;
+                return;
+            }
+
+            // Sort transactions by date in descending order
+            const sortedTransactions = [...transactions].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            sortedTransactions.forEach(transaction => {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50 transition-colors duration-150';
+                const amountClass = transaction.type === 'income' ? 'text-emerald-600 font-semibold' : 'text-red-600 font-semibold';
+
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formatDate(transaction.date)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${transaction.description}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${transaction.category}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 capitalize">${transaction.type === 'income' ? 'Pemasukan' : 'Pengeluaran'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-right ${amountClass}">${formatCurrency(transaction.amount)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button class="delete-transaction-btn text-red-500 hover:text-red-700 transition-colors duration-200 p-1 rounded-md" data-id="${transaction.id}">
+                            <i class="ph-trash-fill text-xl"></i>
+                        </button>
+                    </td>
+                `;
+                transactionListTableBody.appendChild(row);
+            });
+
+            // Add event listeners for delete buttons
+            document.querySelectorAll('.delete-transaction-btn').forEach(button => {
+                button.addEventListener('click', async (event) => {
+                    const transactionId = event.currentTarget.dataset.id;
+                    const confirmed = await showConfirmDialog('Apakah Anda yakin ingin menghapus transaksi ini?');
+                    if (confirmed) {
+                        deleteTransaction(transactionId);
+                    }
+                });
+            });
+        };
+
+        /**
+         * Handles adding a new transaction.
+         */
+        transactionForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const type = document.getElementById('transactionType').value;
+            const amount = parseFloat(document.getElementById('transactionAmount').value);
+            const description = document.getElementById('transactionDescription').value.trim();
+            const date = document.getElementById('transactionDate').value;
+            const category = document.getElementById('transactionCategory').value;
+
+            if (isNaN(amount) || amount <= 0 || !description || !date || !category) {
+                showMessageBox('Harap isi semua kolom dengan benar.');
+                return;
+            }
+
+            const newTransaction = {
+                id: Date.now().toString(), // Simple unique ID
+                type,
+                amount,
+                description,
+                date,
+                category
+            };
+
+            transactions.push(newTransaction);
+            saveData('transactions', transactions);
+            renderTransactions();
+            updateDashboard(); // This will now also update weekly budget and chart
+            transactionForm.reset();
+            document.getElementById('transactionDate').value = new Date().toISOString().split('T')[0]; // Reset date to today
+            showMessageBox('Transaksi berhasil ditambahkan!');
+        });
+
+        /**
+         * Deletes a transaction by its ID.
+         * @param {string} id - The ID of the transaction to delete.
+         */
+        const deleteTransaction = (id) => {
+            transactions = transactions.filter(t => t.id !== id);
+            saveData('transactions', transactions);
+            renderTransactions();
+            updateDashboard(); // This will now also update weekly budget and chart
+            showMessageBox('Transaksi berhasil dihapus!');
+        };
+
+
+        // --- DASHBOARD FUNCTIONS ---
+
+        /**
+         * Updates the dashboard summary (total income, expense, net balance, top expenses, and new statistics).
+         */
+        const updateDashboard = () => {
+            let totalIncome = 0;
+            let totalExpense = 0;
+            const expenseByCategory = {};
+            const currentMonth = new Date().getMonth();
+            const currentYear = new Date().getFullYear();
+
+            transactions.forEach(t => {
+                const transactionDate = new Date(t.date);
+                if (transactionDate.getMonth() === currentMonth && transactionDate.getFullYear() === currentYear) {
+                    if (t.type === 'income') {
+                        totalIncome += t.amount;
+                    } else {
+                        totalExpense += t.amount;
+                        if (expenseByCategory[t.category]) {
+                            expenseByCategory[t.category] += t.amount;
+                        } else {
+                            expenseByCategory[t.category] = t.amount;
+                        }
+                    }
+                }
+            });
+
+            const netBalance = totalIncome - totalExpense;
+
+            totalIncomeEl.textContent = formatCurrency(totalIncome);
+            totalExpenseEl.textContent = formatCurrency(totalExpense);
+            netBalanceEl.textContent = formatCurrency(netBalance);
+
+            // Calculate and display Expense to Income Ratio
+            if (totalIncome > 0) {
+                const ratio = (totalExpense / totalIncome) * 100;
+                expenseToIncomeRatioEl.textContent = `${ratio.toFixed(1)}%`;
+                if (ratio > 80) {
+                    expenseToIncomeRatioEl.className = 'font-bold text-lg text-red-600';
+                } else if (ratio > 50) {
+                    expenseToIncomeRatioEl.className = 'font-bold text-lg text-yellow-600';
+                } else {
+                    expenseToIncomeRatioEl.className = 'font-bold text-lg text-emerald-600';
+                }
+            } else {
+                expenseToIncomeRatioEl.textContent = 'N/A';
+                expenseToIncomeRatioEl.className = 'font-bold text-lg text-gray-500';
+            }
+
+            // Income vs Expense Status
+            if (netBalance > 0) {
+                incomeVsExpenseStatusEl.textContent = 'Pemasukan lebih besar dari pengeluaran!';
+                incomeVsExpenseStatusEl.className = 'font-bold text-lg text-emerald-600';
+            } else if (netBalance < 0) {
+                incomeVsExpenseStatusEl.textContent = 'Pengeluaran lebih besar dari pemasukan!';
+                incomeVsExpenseStatusEl.className = 'font-bold text-lg text-red-600';
+            } else {
+                incomeVsExpenseStatusEl.textContent = 'Pemasukan sama dengan pengeluaran.';
+                incomeVsExpenseStatusEl.className = 'font-bold text-lg text-gray-500';
+            }
+
+            // Spending Suggestion & Motivation
+            let suggestionText = '';
+            let motivationalMessage = '';
+
+            const positiveMotivations = [
+                'Terus pertahankan kebiasaan baik ini, Anda hebat!',
+                'Luar biasa! Disiplin Anda membuahkan hasil. Terus tingkatkan!',
+                'Mantap! Anda menguasai keuangan Anda. Jangan kendur!',
+                'Hebat! Anda selangkah lebih dekat menuju kebebasan finansial. Ayo terus!',
+                'Salut! Anda adalah contoh nyata manajemen keuangan yang sukses. Inspiratif!'
+            ];
+
+            const negativeMotivations = [
+                'Ayo, jangan menyerah! Keuanganmu butuh perhatian lebih, semangat!',
+                'Bangun! Jangan biarkan uang mengendalikan Anda. Kendalikan dia!',
+                'Waktunya introspeksi! Pengeluaran Anda seperti keran bocor. Perbaiki!',
+                'Jangan cuma pasrah! Ini bukan akhir, tapi awal untuk berubah. Ayo bisa!',
+                'Sadarlah! Uang Anda bukan untuk dibakar. Prioritaskan kebutuhan, bukan keinginan!'
+            ];
+
+            const balancedMotivations = [
+                'Oke, seimbang itu bagus, tapi bisa lebih baik lagi! Ayo bergerak!',
+                'Stabil itu baik, tapi pertumbuhan lebih baik. Cari peluang baru!',
+                'Jangan stagnan! Keuangan Anda punya potensi lebih. Dorong batasnya!',
+                'Ini bukan balapan, tapi ini hidup Anda. Tingkatkan level finansialmu!',
+                'Anda sudah di jalur yang benar, sekarang percepat langkahmu!'
+            ];
+
+
+            if (netBalance > 0) {
+                let discretionaryPercentage;
+                if (totalIncome > 0 && (totalExpense / totalIncome) < 0.5) { // If spending is low relative to income
+                    discretionaryPercentage = 0.40; // Suggest up to 40% of surplus for discretionary/extra saving
+                    suggestionText = `Luar biasa! Saldo Anda sangat sehat. Anda bisa mengalokasikan hingga <span class="font-bold text-emerald-600">${discretionaryPercentage * 100}% (${formatCurrency(netBalance * discretionaryPercentage)})</span> dari saldo bersih Anda untuk investasi atau pengeluaran yang Anda inginkan.`;
+                } else if (totalIncome > 0 && (totalExpense / totalIncome) < 0.8) { // If spending is moderate
+                    discretionaryPercentage = 0.25; // Suggest 25% of surplus for discretionary/extra saving
+                    suggestionText = `Bagus! Saldo Anda positif. Anda disarankan untuk mengalokasikan sekitar <span class="font-bold text-emerald-600">${discretionaryPercentage * 100}% (${formatCurrency(netBalance * discretionaryPercentage)})</span> dari saldo bersih Anda untuk pengeluaran diskresioner atau tabungan tambahan.`;
+                } else { // If spending is high relative to income, but still positive net balance
+                    discretionaryPercentage = 0.10; // Suggest a smaller 10% of surplus for discretionary/extra saving
+                    suggestionText = `Saldo Anda positif, namun pengeluaran cukup tinggi. Prioritaskan alokasi <span class="font-bold text-emerald-600">${discretionaryPercentage * 100}% (${formatCurrency(netBalance * discretionaryPercentage)})</span> dari saldo bersih Anda untuk dana darurat atau pelunasan utang.`;
+                }
+                motivationalMessage = positiveMotivations[Math.floor(Math.random() * positiveMotivations.length)];
+            } else if (netBalance < 0) {
+                suggestionText = `Perhatian! Saldo Anda negatif. Sangat disarankan untuk mengurangi pengeluaran dan fokus pada peningkatan pemasukan. Prioritaskan kebutuhan pokok.`;
+                motivationalMessage = negativeMotivations[Math.floor(Math.random() * negativeMotivations.length)];
+            } else {
+                suggestionText = `Saldo Anda seimbang. Pertimbangkan untuk mencari cara meningkatkan pemasukan atau mengoptimalkan pengeluaran Anda untuk membangun tabungan.`;
+                motivationalMessage = balancedMotivations[Math.floor(Math.random() * balancedMotivations.length)];
+            }
+            spendingSuggestionEl.innerHTML = `${suggestionText} <br><br> <strong>Motivasi:</strong> ${motivationalMessage}`;
+
+
+            // Render Top Expenses
+            const sortedExpenses = Object.entries(expenseByCategory).sort(([, a], [, b]) => b - a);
+            topExpensesListEl.innerHTML = ''; // Clear previous list
+
+            if (sortedExpenses.length === 0) {
+                topExpensesSectionEl.classList.add('hidden'); // Hide the entire section if no expenses
+                topExpensesListEl.innerHTML = '<p class="text-gray-500 text-center py-4">Belum ada data pengeluaran bulan ini.</p>'; // Still show message in case it becomes visible later
+            } else {
+                topExpensesSectionEl.classList.remove('hidden'); // Show the section if there are expenses
+                sortedExpenses.slice(0, 5).forEach(([category, amount]) => { // Show top 5
+                    const item = document.createElement('div');
+                    item.className = 'flex justify-between items-center bg-gray-100 p-4 rounded-lg border border-gray-200';
+                    item.innerHTML = `
+                        <span class="font-medium text-gray-700 text-base">${category}</span>
+                        <span class="text-red-600 font-semibold text-base">${formatCurrency(amount)}</span>
+                    `;
+                    topExpensesListEl.appendChild(item);
+                });
+            }
+
+            // Render Goals on Dashboard
+            dashboardGoalsListEl.innerHTML = '';
+            if (goals.length === 0) {
+                dashboardGoalsListEl.innerHTML = '<p class="text-gray-500 text-center py-4">Belum ada target keuangan yang diatur.</p>';
+            } else {
+                goals.forEach(goal => {
+                    const percentageAchieved = (goal.currentAmount / goal.targetAmount) * 100;
+                    const progressBarColor = percentageAchieved >= 100 ? 'bg-emerald-500' : 'bg-blue-500';
+
+                    // Calculate daily installment
+                    let dailyInstallmentText = '';
+                    let dailyInstallmentAmount = 0;
+                    const daysRemaining = goal.dueDate ? getDaysRemaining(goal.dueDate) : -1;
+                    const amountNeeded = goal.targetAmount - goal.currentAmount;
+
+                    if (goal.dueDate && daysRemaining >= 0 && amountNeeded > 0) {
+                        if (daysRemaining > 0) {
+                            dailyInstallmentAmount = amountNeeded / daysRemaining;
+                            dailyInstallmentText = `<p class="text-gray-700 text-sm mt-1">Cicilan Harian: <span class="font-medium text-purple-600">${formatCurrency(dailyInstallmentAmount)}</span></p>`;
+                        } else if (daysRemaining === 0) {
+                            dailyInstallmentAmount = amountNeeded; // Need to pay all today
+                            dailyInstallmentText = `<p class="text-gray-700 text-sm mt-1">Selesaikan hari ini: <span class="font-medium text-purple-600">${formatCurrency(dailyInstallmentAmount)}</span></p>`;
+                        }
+                    } else if (goal.dueDate && daysRemaining < 0 && goal.currentAmount < goal.targetAmount) {
+                         dailyInstallmentText = `<p class="text-gray-700 text-sm mt-1 text-red-600">Target terlewat! Masih butuh ${formatCurrency(amountNeeded)}.</p>`;
+                    } else if (amountNeeded <= 0) {
+                        dailyInstallmentText = `<p class="text-gray-700 text-sm mt-1">Target tercapai!</p>`;
+                    }
+
+                    const goalItem = document.createElement('div');
+                    goalItem.className = 'bg-gray-100 p-4 rounded-lg shadow-sm border border-gray-200';
+                    goalItem.innerHTML = `
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-lg font-semibold text-gray-800">${goal.name}</span>
+                            <span class="text-gray-700 text-sm">${formatCurrency(goal.currentAmount)} / ${formatCurrency(goal.targetAmount)}</span>
+                        </div>
+                        <div class="w-full bg-gray-300 rounded-full h-2.5">
+                            <div class="${progressBarColor} h-2.5 rounded-full" style="width: ${Math.min(100, percentageAchieved)}%;"></div>
+                        </div>
+                        <p class="text-right text-xs text-gray-600 mt-1">${percentageAchieved.toFixed(1)}% tercapai</p>
+                        ${dailyInstallmentText}
+                        ${goal.dueDate && daysRemaining >= 0 && amountNeeded > 0 ? `
+                        <button class="daily-installment-btn mt-3 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors duration-200" data-id="${goal.id}" data-daily-amount="${dailyInstallmentAmount.toFixed(0)}">
+                            <i class="ph-hand-coins-fill mr-2"></i> Wajib Cicil Hari Ini
+                        </button>
+                        ` : ''}
+                    `;
+                    dashboardGoalsListEl.appendChild(goalItem);
+                });
+                // Add event listeners for new daily installment buttons on dashboard
+                document.querySelectorAll('#dashboardGoalsList .daily-installment-btn').forEach(button => {
+                    button.addEventListener('click', (event) => {
+                        const goalId = event.currentTarget.dataset.id;
+                        const defaultAmount = parseFloat(event.currentTarget.dataset.dailyAmount);
+                        applyDailyInstallment(goalId, defaultAmount);
+                    });
+                });
+            }
+
+            // Render Budgets on Dashboard
+            dashboardBudgetsListEl.innerHTML = '';
+            if (budgets.length === 0) {
+                dashboardBudgetsListEl.innerHTML = '<p class="text-gray-500 text-center py-4">Belum ada anggaran yang diatur.</p>';
+            } else {
+                budgets.forEach(budget => {
+                    const currentMonth = new Date().getMonth();
+                    const currentYear = new Date().getFullYear();
+                    let spentAmount = 0;
+
+                    transactions.forEach(t => {
+                        const transactionDate = new Date(t.date);
+                        if (t.type === 'expense' && t.category === budget.category &&
+                            transactionDate.getMonth() === currentMonth && transactionDate.getFullYear() === currentYear) {
+                            spentAmount += t.amount;
+                        }
+                    });
+
+                    const remaining = budget.amount - spentAmount;
+                    const percentageUsed = (spentAmount / budget.amount) * 100;
+                    const progressBarColor = percentageUsed > 90 ? 'bg-red-500' : (percentageUsed > 70 ? 'bg-yellow-500' : 'bg-emerald-500');
+
+                    const budgetItem = document.createElement('div');
+                    budgetItem.className = 'bg-gray-100 p-4 rounded-lg shadow-sm border border-gray-200';
+                    budgetItem.innerHTML = `
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-lg font-semibold text-gray-800">${budget.category}</span>
+                            <span class="text-gray-700 text-sm">${formatCurrency(spentAmount)} / ${formatCurrency(budget.amount)}</span>
+                        </div>
+                        <div class="w-full bg-gray-300 rounded-full h-2.5">
+                            <div class="${progressBarColor} h-2.5 rounded-full" style="width: ${Math.min(100, percentageUsed)}%;"></div>
+                        </div>
+                        <p class="text-right text-xs text-gray-600 mt-1">${percentageUsed.toFixed(1)}% terpakai (Sisa: ${formatCurrency(remaining)})</p>
+                    `;
+                    dashboardBudgetsListEl.appendChild(budgetItem);
+                });
+            }
+
+            // Update Weekly Budget Display
+            updateWeeklyBudgetDisplay();
+
+            // Render/Update Chart
+            renderMonthlyFinanceChart();
+
+            // Check and award rewards
+            checkAndAwardRewards(netBalance);
+        };
+
+
+        // --- WEEKLY BUDGET MANAGEMENT ---
+
+        /**
+         * Handles setting the weekly budget.
+         */
+        weeklyBudgetForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const amount = parseFloat(weeklyBudgetAmountInput.value);
+
+            if (isNaN(amount) || amount <= 0) {
+                showMessageBox('Harap masukkan jumlah anggaran mingguan yang valid (lebih dari 0).');
+                return;
+            }
+
+            const today = new Date();
+            weeklyBudget.amount = amount;
+            weeklyBudget.startDate = getStartOfWeek(today).toISOString().split('T')[0]; // Store start of current week
+            saveData('weeklyBudget', weeklyBudget);
+            updateWeeklyBudgetDisplay();
+            showMessageBox('Anggaran mingguan berhasil diatur!');
+        });
+
+        /**
+         * Updates the display for the weekly budget on the dashboard.
+         */
+        const updateWeeklyBudgetDisplay = () => {
+            const today = new Date();
+            const startOfCurrentWeek = getStartOfWeek(today);
+            const storedWeeklyBudgetStartDate = weeklyBudget.startDate ? new Date(weeklyBudget.startDate) : null;
+
+            // Check if the stored weekly budget is for the current week
+            if (!storedWeeklyBudgetStartDate || startOfCurrentWeek.getTime() !== getStartOfWeek(storedWeeklyBudgetStartDate).getTime()) {
+                // If not, reset spent amount for the new week, keep the budget amount
+                weeklyBudget.startDate = startOfCurrentWeek.toISOString().split('T')[0];
+                saveData('weeklyBudget', weeklyBudget); // Save the new start date
+            }
+
+            let spentThisWeek = 0;
+            if (weeklyBudget.amount > 0) {
+                transactions.forEach(t => {
+                    const transactionDate = new Date(t.date);
+                    if (t.type === 'expense' && getStartOfWeek(transactionDate).getTime() === startOfCurrentWeek.getTime()) {
+                        spentThisWeek += t.amount;
+                    }
+                });
+            }
+
+            const remainingThisWeek = weeklyBudget.amount - spentThisWeek;
+            const percentageUsed = weeklyBudget.amount > 0 ? (spentThisWeek / weeklyBudget.amount) * 100 : 0;
+            const progressBarColor = percentageUsed > 100 ? 'bg-red-500' : (percentageUsed > 80 ? 'bg-yellow-500' : 'bg-emerald-500');
+
+            currentWeeklyBudgetEl.textContent = formatCurrency(weeklyBudget.amount);
+            spentWeeklyAmountEl.textContent = formatCurrency(spentThisWeek);
+            remainingWeeklyAmountEl.textContent = formatCurrency(remainingThisWeek);
+
+            weeklyBudgetProgressBar.style.width = `${Math.min(100, percentageUsed)}%`;
+            weeklyBudgetProgressBar.className = `h-2.5 rounded-full ${progressBarColor}`;
+            weeklyBudgetPercentageEl.textContent = `${percentageUsed.toFixed(1)}% terpakai`;
+
+            if (remainingThisWeek < 0) {
+                weeklyBudgetWarningEl.textContent = `Anda telah melebihi anggaran mingguan sebesar ${formatCurrency(Math.abs(remainingThisWeek))}!`;
+                weeklyBudgetWarningEl.classList.remove('hidden');
+                // Trigger notification if exceeded
+                showMessageBox(`Peringatan! Anggaran mingguan Anda terlampaui sebesar ${formatCurrency(Math.abs(remainingThisWeek))}!`);
+            } else {
+                weeklyBudgetWarningEl.classList.add('hidden');
+            }
+        };
+
+
+        // --- BUDGETS MANAGEMENT ---
+
+        /**
+         * Renders the list of budgets.
+         */
+        const renderBudgets = () => {
+            budgetsListDiv.innerHTML = ''; // Clear existing list
+
+            if (budgets.length === 0) {
+                budgetsListDiv.innerHTML = '<p class="text-gray-500 text-center py-4">Belum ada anggaran yang diatur.</p>';
+                return;
+            }
+
+            budgets.forEach(budget => {
+                const currentMonth = new Date().getMonth();
+                const currentYear = new Date().getFullYear();
+                let spentAmount = 0;
+
+                transactions.forEach(t => {
+                    const transactionDate = new Date(t.date);
+                    if (t.type === 'expense' && t.category === budget.category &&
+                        transactionDate.getMonth() === currentMonth && transactionDate.getFullYear() === currentYear) {
+                        spentAmount += t.amount;
+                    }
+                });
+
+                const remaining = budget.amount - spentAmount;
+                const percentageUsed = (spentAmount / budget.amount) * 100;
+                const progressBarColor = percentageUsed > 90 ? 'bg-red-500' : (percentageUsed > 70 ? 'bg-yellow-500' : 'bg-emerald-500');
+
+                const budgetItem = document.createElement('div');
+                budgetItem.className = 'bg-gray-100 p-5 rounded-lg shadow-sm border border-gray-200';
+                budgetItem.innerHTML = `
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-xl font-semibold text-gray-800">${budget.category}</span>
+                        <button class="delete-budget-btn text-red-500 hover:text-red-700 transition-colors duration-200 p-1 rounded-md" data-id="${budget.id}">
+                            <i class="ph-trash-fill text-xl"></i>
+                        </button>
+                    </div>
+                    <p class="text-gray-700 text-base mb-1">Anggaran: <span class="font-medium">${formatCurrency(budget.amount)}</span></p>
+                    <p class="text-gray-700 text-base mb-2">Terpakai: <span class="font-medium text-red-600">${formatCurrency(spentAmount)}</span></p>
+                    <p class="text-gray-700 text-base mb-4">Sisa: <span class="font-medium ${remaining < 0 ? 'text-red-600' : 'text-emerald-600'}">${formatCurrency(remaining)}</span></p>
+                    <div class="w-full bg-gray-300 rounded-full h-3">
+                        <div class="${progressBarColor} h-3 rounded-full" style="width: ${Math.min(100, percentageUsed)}%;"></div>
+                    </div>
+                    <p class="text-right text-sm text-gray-600 mt-2">${percentageUsed.toFixed(1)}% terpakai</p>
+                `;
+                budgetsListDiv.appendChild(budgetItem);
+            });
+
+            // Add event listeners for delete buttons
+            document.querySelectorAll('.delete-budget-btn').forEach(button => {
+                button.addEventListener('click', async (event) => {
+                    const budgetId = event.currentTarget.dataset.id;
+                    const confirmed = await showConfirmDialog('Apakah Anda yakin ingin menghapus anggaran ini?');
+                    if (confirmed) {
+                        deleteBudget(budgetId);
+                    }
+                });
+            });
+        };
+
+        /**
+         * Handles setting a new budget.
+         */
+        budgetForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const category = document.getElementById('budgetCategory').value;
+            const amount = parseFloat(document.getElementById('budgetAmount').value);
+
+            if (isNaN(amount) || amount <= 0 || !category) {
+                showMessageBox('Harap isi semua kolom dengan benar.');
+                return;
+            }
+
+            // Check if budget for this category already exists
+            const existingBudgetIndex = budgets.findIndex(b => b.category === category);
+            if (existingBudgetIndex !== -1) {
+                // Update existing budget
+                budgets[existingBudgetIndex].amount = amount;
+                showMessageBox(`Anggaran untuk kategori "${category}" berhasil diperbarui!`);
+            } else {
+                // Add new budget
+                const newBudget = {
+                    id: Date.now().toString(),
+                    category,
+                    amount
+                };
+                budgets.push(newBudget);
+                showMessageBox('Anggaran berhasil ditambahkan!');
+            }
+
+            saveData('budgets', budgets);
+            renderBudgets();
+            updateDashboard(); // Update dashboard after budget changes
+            budgetForm.reset();
+        });
+
+        /**
+         * Deletes a budget by its ID.
+         * @param {string} id - The ID of the budget to delete.
+         */
+        const deleteBudget = (id) => {
+            budgets = budgets.filter(b => b.id !== id);
+            saveData('budgets', budgets);
+            renderBudgets();
+            updateDashboard(); // Update dashboard after budget changes
+            showMessageBox('Anggaran berhasil dihapus!');
+        };
+
+
+        // --- GOALS MANAGEMENT ---
+
+        /**
+         * Renders the list of financial goals.
+         */
+        const renderGoals = () => {
+            goalsListDiv.innerHTML = ''; // Clear existing list
+
+            if (goals.length === 0) {
+                goalsListDiv.innerHTML = '<p class="text-gray-500 text-center py-4">Belum ada target keuangan yang diatur.</p>';
+                return;
+            }
+
+            goals.forEach(goal => {
+                const percentageAchieved = (goal.currentAmount / goal.targetAmount) * 100;
+                const progressBarColor = percentageAchieved >= 100 ? 'bg-emerald-500' : 'bg-blue-500';
+
+                // Calculate daily installment for Goals tab
+                let dailyInstallmentText = '';
+                let dailyInstallmentAmount = 0;
+                const daysRemaining = goal.dueDate ? getDaysRemaining(goal.dueDate) : -1;
+                const amountNeeded = goal.targetAmount - goal.currentAmount;
+
+                if (goal.dueDate && daysRemaining >= 0 && amountNeeded > 0) {
+                    if (daysRemaining > 0) {
+                        dailyInstallmentAmount = amountNeeded / daysRemaining;
+                        dailyInstallmentText = `<p class="text-gray-700 text-base mt-2">Cicilan Harian: <span class="font-medium text-purple-600">${formatCurrency(dailyInstallmentAmount)}</span></p>`;
+                    } else if (daysRemaining === 0) {
+                        dailyInstallmentAmount = amountNeeded; // Need to pay all today
+                        dailyInstallmentText = `<p class="text-gray-700 text-base mt-2">Selesaikan hari ini: <span class="font-medium text-purple-600">${formatCurrency(dailyInstallmentAmount)}</span></p>`;
+                    }
+                } else if (goal.dueDate && daysRemaining < 0 && goal.currentAmount < goal.targetAmount) {
+                     dailyInstallmentText = `<p class="text-gray-700 text-base mt-2 text-red-600">Target terlewat! Masih butuh ${formatCurrency(amountNeeded)}.</p>`;
+                } else if (amountNeeded <= 0) {
+                    dailyInstallmentText = `<p class="text-gray-700 text-base mt-2">Target tercapai!</p>`;
+                }
+
+
+                const goalItem = document.createElement('div');
+                goalItem.className = 'bg-gray-100 p-5 rounded-lg shadow-sm border border-gray-200';
+                goalItem.innerHTML = `
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-xl font-semibold text-gray-800">${goal.name}</span>
+                        <button class="delete-goal-btn text-red-500 hover:text-red-700 transition-colors duration-200 p-1 rounded-md" data-id="${goal.id}">
+                            <i class="ph-trash-fill text-xl"></i>
+                        </button>
+                    </div>
+                    <p class="text-gray-700 text-base mb-1">Target: <span class="font-medium">${formatCurrency(goal.targetAmount)}</span></p>
+                    <p class="text-gray-700 text-base mb-2">Saat Ini: <span class="font-medium text-blue-600">${formatCurrency(goal.currentAmount)}</span></p>
+                    ${goal.dueDate ? `<p class="text-gray-700 text-base mb-4">Jatuh Tempo: <span class="font-medium">${formatDate(goal.dueDate)}</span></p>` : ''}
+                    <div class="w-full bg-gray-300 rounded-full h-3">
+                        <div class="${progressBarColor} h-3 rounded-full" style="width: ${Math.min(100, percentageAchieved)}%;"></div>
+                    </div>
+                    <p class="text-right text-sm text-gray-600 mt-2">${percentageAchieved.toFixed(1)}% tercapai</p>
+                    ${dailyInstallmentText}
+                    <div class="flex flex-wrap gap-2 mt-4">
+                        <button class="add-to-goal-btn inline-flex items-center px-5 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200" data-id="${goal.id}">
+                            <i class="ph-plus-fill mr-2 text-lg"></i> Tambah Dana
+                        </button>
+                        ${goal.dueDate && daysRemaining >= 0 && amountNeeded > 0 ? `
+                        <button class="daily-installment-btn inline-flex items-center px-5 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-colors duration-200" data-id="${goal.id}" data-daily-amount="${dailyInstallmentAmount.toFixed(0)}">
+                            <i class="ph-hand-coins-fill mr-2"></i> Wajib Cicil Hari Ini
+                        </button>
+                        ` : ''}
+                    </div>
+                `;
+                goalsListDiv.appendChild(goalItem);
+            });
+
+            // Add event listeners for new daily installment buttons in goals tab
+            document.querySelectorAll('#goalsList .daily-installment-btn').forEach(button => {
+                button.addEventListener('click', (event) => {
+                    const goalId = event.currentTarget.dataset.id;
+                    const defaultAmount = parseFloat(event.currentTarget.dataset.dailyAmount);
+                    applyDailyInstallment(goalId, defaultAmount);
+                });
+            });
+
+            // Add event listeners for delete and add fund buttons (existing)
+            document.querySelectorAll('.add-to-goal-btn').forEach(button => {
+                button.addEventListener('click', (event) => {
+                    const goalId = event.currentTarget.closest('[data-id]').dataset.id; // Get ID from parent
+                    const amountToAdd = parseFloat(prompt('Masukkan jumlah dana yang ingin ditambahkan:'));
+                    if (!isNaN(amountToAdd) && amountToAdd > 0) {
+                        addToGoal(goalId, amountToAdd);
+                    } else if (amountToAdd !== null) { // If user didn't cancel prompt
+                        showMessageBox('Jumlah dana tidak valid.');
+                    }
+                });
+            });
+
+            document.querySelectorAll('.delete-goal-btn').forEach(button => {
+                button.addEventListener('click', async (event) => {
+                    const goalId = event.currentTarget.dataset.id;
+                    const confirmed = await showConfirmDialog('Apakah Anda yakin ingin menghapus target ini?');
+                    if (confirmed) {
+                        deleteGoal(goalId);
+                    }
+                });
+            });
+        };
+
+        /**
+         * Handles adding a new financial goal.
+         */
+        goalForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const name = document.getElementById('goalName').value.trim();
+            const targetAmount = parseFloat(document.getElementById('goalTargetAmount').value);
+            const currentAmount = parseFloat(document.getElementById('goalCurrentAmount').value);
+            const dueDate = document.getElementById('goalDueDate').value;
+
+            if (isNaN(targetAmount) || targetAmount <= 0 || isNaN(currentAmount) || currentAmount < 0 || !name) {
+                showMessageBox('Harap isi semua kolom dengan benar dan jumlah target harus lebih dari 0.');
+                return;
+            }
+
+            if (currentAmount > targetAmount) {
+                showMessageBox('Jumlah saat ini tidak boleh melebihi jumlah target.');
+                return;
+            }
+
+            const newGoal = {
+                id: Date.now().toString(),
+                name,
+                targetAmount,
+                currentAmount,
+                dueDate: dueDate || null // Store null if no due date
+            };
+
+            goals.push(newGoal);
+            saveData('goals', goals);
+            renderGoals();
+            updateDashboard(); // Update dashboard after goal changes
+            goalForm.reset();
+            showMessageBox('Target keuangan berhasil ditambahkan!');
+        });
+
+        /**
+         * Deletes a financial goal by its ID.
+         * @param {string} id - The ID of the goal to delete.
+         */
+        const deleteGoal = (id) => {
+            goals = goals.filter(g => g.id !== id);
+            saveData('goals', goals);
+            renderGoals();
+            updateDashboard(); // Update dashboard after goal changes
+            showMessageBox('Target keuangan berhasil dihapus!');
+        };
+
+        /**
+         * Adds funds to a specific financial goal.
+         * @param {string} id - The ID of the goal to update.
+         * @param {number} amount - The amount to add.
+         */
+        const addToGoal = (id, amount) => {
+            const goalIndex = goals.findIndex(g => g.id === id);
+            if (goalIndex !== -1) {
+                const goal = goals[goalIndex];
+                goal.currentAmount += amount;
+                if (goal.currentAmount > goal.targetAmount) {
+                    goal.currentAmount = goal.targetAmount; // Cap at target amount
+                }
+                saveData('goals', goals);
+                renderGoals();
+                updateDashboard(); // Update dashboard after goal changes
+                showMessageBox(`Dana sebesar ${formatCurrency(amount)} berhasil ditambahkan ke target "${goal.name}".`);
+            } else {
+                showMessageBox('Target tidak ditemukan.');
+            }
+        };
+
+        /**
+         * Prompts user to apply daily installment or custom amount to a goal.
+         * @param {string} goalId - The ID of the goal to update.
+         * @param {number} defaultDailyAmount - The calculated daily amount to suggest.
+         */
+        const applyDailyInstallment = async (goalId, defaultDailyAmount) => {
+            const goal = goals.find(g => g.id === goalId);
+            if (!goal) {
+                showMessageBox('Target tidak ditemukan.');
+                return;
+            }
+
+            const promptMessage = `Anda disarankan cicil ${formatCurrency(defaultDailyAmount)} hari ini untuk target "${goal.name}".\n\nMasukkan jumlah yang ingin dicicil (kosongkan untuk menggunakan jumlah saran):`;
+            const userInput = prompt(promptMessage);
+
+            if (userInput === null) { // User cancelled
+                return;
+            }
+
+            let amountToApply = defaultDailyAmount;
+            if (userInput.trim() !== '') {
+                // Handle Indonesian number format (e.g., 1.000.000 becomes 1000000, 100,500 becomes 100.500)
+                const parsedInput = parseFloat(userInput.replace(/\./g, '').replace(/,/g, '.'));
+                if (isNaN(parsedInput) || parsedInput <= 0) {
+                    showMessageBox('Jumlah cicilan tidak valid. Harap masukkan angka positif.');
+                    return;
+                }
+                amountToApply = parsedInput;
+            }
+
+            addToGoal(goalId, amountToApply);
+        };
+
+
+        // --- CHART.JS INTEGRATION ---
+
+        /**
+         * Renders or updates the monthly finance chart.
+         */
+        const renderMonthlyFinanceChart = () => {
+            const monthlyData = {}; // { 'YYYY-MM': { income: 0, expense: 0 } }
+
+            transactions.forEach(t => {
+                const date = new Date(t.date);
+                const monthYear = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+
+                if (!monthlyData[monthYear]) {
+                    monthlyData[monthYear] = { income: 0, expense: 0 };
+                }
+
+                if (t.type === 'income') {
+                    monthlyData[monthYear].income += t.amount;
+                } else {
+                    monthlyData[monthYear].expense += t.amount;
+                }
+            });
+
+            // Sort months chronologically
+            const sortedMonths = Object.keys(monthlyData).sort();
+
+            const labels = sortedMonths.map(my => {
+                const [year, month] = my.split('-');
+                const date = new Date(year, parseInt(month) - 1);
+                return date.toLocaleString('id-ID', { month: 'short', year: '2-digit' });
+            });
+
+            const incomes = sortedMonths.map(my => monthlyData[my].income);
+            const expenses = sortedMonths.map(my => monthlyData[my].expense);
+
+            const data = {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Pemasukan',
+                        data: incomes,
+                        backgroundColor: 'rgba(16, 185, 129, 0.7)', // Emerald 500
+                        borderColor: 'rgba(16, 185, 129, 1)',
+                        borderWidth: 1,
+                        borderRadius: 5,
+                    },
+                    {
+                        label: 'Pengeluaran',
+                        data: expenses,
+                        backgroundColor: 'rgba(239, 68, 68, 0.7)', // Red 500
+                        borderColor: 'rgba(239, 68, 68, 1)',
+                        borderWidth: 1,
+                        borderRadius: 5,
+                    }
+                ]
+            };
+
+            const config = {
+                type: 'bar',
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false, // Allows canvas to resize
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Pemasukan vs Pengeluaran Bulanan',
+                            font: {
+                                size: 18,
+                                weight: 'bold'
+                            },
+                            color: '#374151' // Gray 700
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += formatCurrency(context.parsed.y);
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return formatCurrency(value);
+                                },
+                                color: '#4b5563' // Gray 600
+                            },
+                            grid: {
+                                color: '#e5e7eb' // Gray 200
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: '#4b5563' // Gray 600
+                            },
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            };
+
+            if (monthlyChart) {
+                monthlyChart.destroy(); // Destroy existing chart before creating a new one
+            }
+            monthlyChart = new Chart(monthlyFinanceChartCanvas, config);
+        };
+
+        // --- REWARD SYSTEM FUNCTIONS ---
+
+        /**
+         * Displays the reward notification modal.
+         * @param {object} reward - The reward object to display.
+         * @param {string} [goalName] - Optional: The name of the goal if it's a goal completion reward.
+         */
+        const showRewardNotificationModal = (reward, goalName = '') => {
+            rewardTitleEl.textContent = reward.title;
+            let description = reward.description;
+            if (typeof description === 'function') {
+                description = description(goalName);
+            }
+            rewardDescriptionEl.innerHTML = `${description}<br><br><strong>Saran:</strong> ${reward.suggestion}`;
+            rewardNotificationModal.classList.remove('hidden');
+            rewardNotificationModal.querySelector('div').classList.add('scale-100');
+        };
+
+        /**
+         * Hides the reward notification modal.
+         */
+        const hideRewardNotificationModal = () => {
+            rewardNotificationModal.querySelector('div').classList.remove('scale-100');
+            rewardNotificationModal.classList.add('hidden');
+        };
+
+        /**
+         * Checks conditions and awards rewards.
+         * This function is called after any data change that might trigger a reward.
+         * @param {number} currentNetBalance - The current net balance.
+         */
+        const checkAndAwardRewards = (currentNetBalance) => {
+            const completedGoalsCount = goals.filter(g => g.currentAmount >= g.targetAmount && g.targetAmount > 0).length;
+
+            rewardDefinitions.forEach(reward => {
+                if (!achievedRewards.includes(reward.id)) { // Check if reward is not already achieved
+                    let awarded = false;
+                    let goalNameForReward = '';
+
+                    if (reward.type === 'balance' && reward.condition(currentNetBalance)) {
+                        awarded = true;
+                    } else if (reward.type === 'goal_completion') {
+                        // Check if any goal just completed
+                        const newlyCompletedGoal = goals.find(g =>
+                            g.targetAmount > 0 &&
+                            g.currentAmount >= g.targetAmount &&
+                            !achievedRewards.includes(`${reward.id}_${g.id}`) // Check if this specific goal completion reward hasn't been awarded
+                        );
+                        if (newlyCompletedGoal) {
+                            awarded = true;
+                            goalNameForReward = newlyCompletedGoal.name;
+                            // Store goal-specific completion reward to prevent re-awarding for same goal
+                            achievedRewards.push(`${reward.id}_${newlyCompletedGoal.id}`);
+                        }
+                    } else if (reward.type === 'multiple_goal_completion' && reward.condition(completedGoalsCount)) {
+                        awarded = true;
+                    }
+
+                    if (awarded) {
+                        achievedRewards.push(reward.id); // Add general reward ID
+                        saveData('achievedRewards', achievedRewards);
+                        showRewardNotificationModal(reward, goalNameForReward);
+                        renderAchievedRewards(); // Update the rewards tab
+                    }
+                }
+            });
+        };
+
+        /**
+         * Renders the list of achieved rewards in the Rewards tab.
+         */
+        const renderAchievedRewards = () => {
+            achievedRewardsListEl.innerHTML = ''; // Clear existing list
+
+            if (achievedRewards.length === 0) {
+                achievedRewardsListEl.innerHTML = '<p class="text-gray-500 text-center py-4 col-span-full">Belum ada prestasi yang diraih.</p>';
+                return;
+            }
+
+            achievedRewards.forEach(rewardId => {
+                // Find the actual reward definition
+                const reward = rewardDefinitions.find(def => def.id === rewardId || rewardId.startsWith(`${def.id}_`));
+
+                if (reward) {
+                    let displayTitle = reward.title;
+                    let displayDescription = reward.description;
+                    if (typeof displayDescription === 'function' && rewardId.startsWith(`${reward.id}_`)) {
+                        // For goal-specific rewards, extract goal name from ID if needed
+                        const goalId = rewardId.substring(reward.id.length + 1);
+                        const completedGoal = goals.find(g => g.id === goalId);
+                        if (completedGoal) {
+                            displayDescription = displayDescription(completedGoal.name);
+                        } else {
+                            displayDescription = reward.description('target yang tidak dikenal'); // Fallback
+                        }
+                    } else if (typeof displayDescription === 'function') {
+                        // For other functional descriptions (e.g., multiple goals)
+                        displayDescription = displayDescription(goals.filter(g => g.currentAmount >= g.targetAmount && g.targetAmount > 0).length);
+                    }
+
+                    const rewardItem = document.createElement('div');
+                    rewardItem.className = 'bg-gradient-to-br from-yellow-50 to-yellow-100 p-5 rounded-xl shadow-md border border-yellow-300 text-center flex flex-col items-center';
+                    rewardItem.innerHTML = `
+                        <i class="ph-star-four-fill text-yellow-500 text-4xl mb-3"></i>
+                        <h4 class="text-xl font-bold text-gray-800 mb-2">${displayTitle}</h4>
+                        <p class="text-gray-700 text-sm mb-3">${displayDescription}</p>
+                        <p class="text-gray-600 text-xs italic">"${reward.suggestion}"</p>
+                    `;
+                    achievedRewardsListEl.appendChild(rewardItem);
+                }
+            });
+        };
+
+    </script>
+</body>
+</html>
